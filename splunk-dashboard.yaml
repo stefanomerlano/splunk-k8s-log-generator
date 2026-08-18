@@ -1,0 +1,240 @@
+{
+    "title": "Fintech - Audit Log",
+    "description": "",
+    "inputs": {
+        "input_global_trp": {
+            "options": {
+                "defaultValue": "-24h@h,now",
+                "token": "global_time"
+            },
+            "title": "Intervallo temporale globale",
+            "type": "input.timerange"
+        }
+    },
+    "defaults": {
+        "dataSources": {
+            "ds.search": {
+                "options": {
+                    "queryParameters": {
+                        "earliest": "$global_time.earliest$",
+                        "latest": "$global_time.latest$"
+                    }
+                }
+            },
+            "ds.spl2": {
+                "options": {
+                    "queryParameters": {
+                        "earliest": "$global_time.earliest$",
+                        "latest": "$global_time.latest$"
+                    }
+                }
+            }
+        },
+        "visualizations": {
+            "global": {
+                "showProgressBar": true
+            }
+        }
+    },
+    "visualizations": {
+        "viz_CnbEIfxZ": {
+            "dataSources": {
+                "primary": "ds_gX4M99EF"
+            },
+            "options": {},
+            "type": "splunk.table"
+        },
+        "viz_uE9cSVQd": {
+            "dataSources": {
+                "primary": "ds_0wbdmyvN"
+            },
+            "options": {},
+            "type": "splunk.singlevalue"
+        },
+        "viz_daily_chart": {
+            "dataSources": {
+                "primary": "ds_daily_count"
+            },
+            "options": {
+                "title": "Log Entries Per Day"
+            },
+            "type": "splunk.column"
+        },
+        "viz_duplicate_count": {
+            "dataSources": {
+                "primary": "ds_duplicate_count"
+            },
+            "options": {
+                "title": "Duplicate IDs Count"
+            },
+            "type": "splunk.singlevalue"
+        },
+        "viz_duplicate_table": {
+            "dataSources": {
+                "primary": "ds_duplicate_table"
+            },
+            "options": {
+                "title": "Duplicate IDs Analysis"
+            },
+            "type": "splunk.table"
+        }
+    },
+    "dataSources": {
+        "ds_0wbdmyvN": {
+            "name": "Events Count",
+            "options": {
+                "query": "index=main host=\"loggenerator*\" | stats count",
+                "queryParameters": {
+                    "earliest": "$global_time.earliest$",
+                    "latest": "$global_time.latest$"
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_gX4M99EF": {
+            "name": "Events",
+            "options": {
+                "query": "index=main host=\"loggenerator*\" | table _time, created, import_time, host, id, user, operation, text, details",
+                "queryParameters": {
+                    "earliest": "$global_time.earliest$",
+                    "latest": "$global_time.latest$"
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_daily_count": {
+            "name": "Daily Events Count",
+            "options": {
+                "query": "index=main host=\"loggenerator*\" | timechart span=1d count as \"Log Entries\"",
+                "queryParameters": {
+                    "earliest": "$global_time.earliest$",
+                    "latest": "$global_time.latest$"
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_duplicate_count": {
+            "name": "Duplicate IDs Count",
+            "options": {
+                "query": "index=main host=\"loggenerator*\" | stats count by id | where count > 1 | stats count as \"Duplicate IDs\"",
+                "queryParameters": {
+                    "earliest": "$global_time.earliest$",
+                    "latest": "$global_time.latest$"
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_duplicate_table": {
+            "name": "Duplicate IDs Table",
+            "options": {
+                "query": "index=main host=\"loggenerator*\" | stats count as \"Occurrences\", values(user) as \"Users\", values(operation) as \"Operations\", min(_time) as \"First Seen\", max(_time) as \"Last Seen\" by id | where Occurrences > 1 | eval \"First Seen\"=strftime('First Seen', \"%Y-%m-%d %H:%M:%S\"), \"Last Seen\"=strftime('Last Seen', \"%Y-%m-%d %H:%M:%S\") | sort - \"Occurrences\"",
+                "queryParameters": {
+                    "earliest": "$global_time.earliest$",
+                    "latest": "$global_time.latest$"
+                }
+            },
+            "type": "ds.search"
+        }
+    },
+    "layout": {
+        "globalInputs": [
+            "input_global_trp"
+        ],
+        "layoutDefinitions": {
+            "layout_1": {
+                "options": {
+                    "height": 960,
+                    "width": 1440
+                },
+                "structure": [
+                    {
+                        "item": "viz_uE9cSVQd",
+                        "position": {
+                            "h": 88,
+                            "w": 1440,
+                            "x": 0,
+                            "y": 0
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_CnbEIfxZ",
+                        "position": {
+                            "h": 556,
+                            "w": 1440,
+                            "x": 0,
+                            "y": 88
+                        },
+                        "type": "block"
+                    }
+                ],
+                "type": "grid"
+            },
+            "layout_2": {
+                "options": {
+                    "height": 960,
+                    "width": 1440
+                },
+                "structure": [
+                    {
+                        "item": "viz_daily_chart",
+                        "position": {
+                            "h": 644,
+                            "w": 1440,
+                            "x": 0,
+                            "y": 0
+                        },
+                        "type": "block"
+                    }
+                ],
+                "type": "grid"
+            },
+            "layout_3": {
+                "options": {
+                    "height": 960,
+                    "width": 1440
+                },
+                "structure": [
+                    {
+                        "item": "viz_duplicate_count",
+                        "position": {
+                            "h": 88,
+                            "w": 1440,
+                            "x": 0,
+                            "y": 0
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_duplicate_table",
+                        "position": {
+                            "h": 556,
+                            "w": 1440,
+                            "x": 0,
+                            "y": 88
+                        },
+                        "type": "block"
+                    }
+                ],
+                "type": "grid"
+            }
+        },
+        "options": {},
+        "tabs": {
+            "items": [
+                {
+                    "label": "Events",
+                    "layoutId": "layout_1"
+                },
+                {
+                    "label": "Daily Summary",
+                    "layoutId": "layout_2"
+                },
+                {
+                    "label": "Duplicate IDs",
+                    "layoutId": "layout_3"
+                }
+            ]
+        }
+    }
+}

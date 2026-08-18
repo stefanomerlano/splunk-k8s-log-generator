@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: apps
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loggenerator
+  namespace: apps
+  labels:
+    app: loggenerator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loggenerator
+  template:
+    metadata:
+      labels:
+        app: loggenerator
+    spec:
+      containers:
+      - name: loggenerator
+        image: log-generator:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SPLUNK_HOST
+          value: "splunk-service.splunk.svc.cluster.local"
+        - name: SPLUNK_PORT
+          value: "9997"
+        - name: LOG_INTERVAL_MS
+          value: "10"

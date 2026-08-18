@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: splunk
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: splunk-etc-pvc
+  namespace: splunk
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: splunk-var-pvc
+  namespace: splunk
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: splunk
+  namespace: splunk
+  labels:
+    app: splunk
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: splunk
+  template:
+    metadata:
+      labels:
+        app: splunk
+    spec:
+      containers:
+      - name: splunk
+        image: splunk/splunk:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SPLUNK_START_ARGS
+          value: "--accept-license"
+        - name: SPLUNK_GENERAL_TERMS
+          value: "--accept-sgt-current-at-splunk-com"
+        - name: SPLUNK_PASSWORD
+          value: "SplunkAdmin123!"
+        - name: SPLUNK_LISTEN_PORT
+          value: "9997"
+        - name: SPLUNK_SKIP_PREINSTALL_CPU_CHECKS_CORRUPTING_DATA_IF_UNSUPPORTED
+          value: "1"
+        ports:
+        - containerPort: 8000
+          name: web
+        - containerPort: 9997
+          name: receiver
+        startupProbe:
+          httpGet:
+            path: /en-US/
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 60
+        readinessProbe:
+          httpGet:
+            path: /en-US/
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 20
+        livenessProbe:
+          httpGet:
+            path: /en-US/
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          failureThreshold: 10
+        volumeMounts:
+        - mountPath: /opt/splunk/etc
+          name: splunk-etc
+        - mountPath: /opt/splunk/var
+          name: splunk-var
+      volumes:
+      - name: splunk-etc
+        persistentVolumeClaim:
+          claimName: splunk-etc-pvc
+      - name: splunk-var
+        persistentVolumeClaim:
+          claimName: splunk-var-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: splunk-service
+  namespace: splunk
+  labels:
+    app: splunk
+spec:
+  type: LoadBalancer
+  selector:
+    app: splunk
+  ports:
+  - name: web
+    port: 8000
+    targetPort: 8000
+  - name: receiver
+    port: 9997
+    targetPort: 9997
